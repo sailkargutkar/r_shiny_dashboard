@@ -1,4 +1,4 @@
-# Clinical Data Analysis Dashboard
+#  Data Analysis Dashboard
 
 ### Overview
 This project is organized using the Rhino file structure to ensure a scalable and maintainable R Shiny application. The Rhino structure promotes best practices such as modularization, separation of concerns, and the use of external resources. Key directories include R/ for main application scripts, modules/ for UI and server components, www/ for static assets like CSS, JS, and images, and data/ for datasets.
@@ -21,11 +21,11 @@ This section of the dashboard offers an in-depth analysis of the demographic dis
 
 
 ### Consent Analysis
-Understanding patient consent is crucial for clinical research. This section analyzes:
+Understanding patient consent is crucial for  research. This section analyzes:
 
 ![](app/static/img/consent.gif)
 
-- **Consent Rates**: Percentage of patients who have consented to participate in various clinical trials.
+- **Consent Rates**: Percentage of patients who have consented to participate in various  trials.
 
 - **Demographic Correlations**: Relationship between demographic factors and consent rates, identifying groups that may need additional engagement.
 
@@ -35,7 +35,7 @@ ICD codes are essential for categorizing diagnoses and procedures. This section 
 
 ![](app/static/img/icd.gif)
 
-- **Diagnosis Frequency**: Analysis of the most common diagnoses among the patients, which helps prioritize clinical resources.
+- **Diagnosis Frequency**: Analysis of the most common diagnoses among the patients, which helps prioritize  resources.
 
 - **Procedure Analysis**: Examination of the most frequently performed medical procedures, providing insights into treatment patterns.
 
