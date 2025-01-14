@@ -1,0 +1,591 @@
+---
+title: ""
+language: r
+params:
+  data: "data"
+  filter: "filter"
+  count: "count"
+  common_utils: "common_utils"
+  img_save_path: "img_save_path"
+  to_be_printed: "to_be_printed"
+  plotly_username: "plotly_username"
+  plotly_api_key: "plotly_api_key"
+  data_last_sync_date: "data_last_sync_date"
+always_allow_html: true
+output: pdf_document
+---
+  
+```{r setup, include=FALSE, echo = FALSE, message=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, echo = FALSE)
+```
+
+```{r}
+Sys.setenv("plotly_username" = params$plotly_username)
+Sys.setenv("plotly_api_key" = params$plotly_api_key)
+
+library(ggplot2)
+
+source(params$common_utils)
+data_last_sync_date <- paste('Data as of', params$data_last_sync_date, 'UTC', sep = ' ')
+```
+
+```{r, results='asis'}
+    
+    if("indications_sunburst" %in% params$to_be_printed){
+      cat("# Overview Indications\n")
+    }
+    if("consent_sunburst" %in% params$to_be_printed){
+      cat("# Recent Diagnosis\n")
+    }
+    if("distribution_plot" %in% params$to_be_printed){
+      cat("# Distribution Plot\n")
+    }
+    if("distribution_count" %in% params$to_be_printed){
+      cat("# Distribution Count\n")
+    }
+    if("consented_diagnosis_primary_cancer_diagnosis" %in% params$to_be_printed){
+      cat("# CANCER DIAGNOSIS Plot\n")
+    }
+    if("consented_diagnosis_metastatic_distribution" %in% params$to_be_printed){
+      cat("# Metastatic Distribution Plot\n")
+    }
+    if("indications_diagnosis_most_recent_diagnosis" %in% params$to_be_printed){
+      cat("# Indications Diagnosis Recent Diagnosis\n")
+    }
+    if("consented_diagnosis_treatment_intent_status" %in% params$to_be_printed){
+      cat("# Treatment Status Intent Plot\n")
+    }
+    if("consented_diagnosis_treatment_status" %in% params$to_be_printed){
+      cat("# Treatment Status Plot\n")
+    }
+    if("consent_summary" %in% params$to_be_printed){
+      cat("# Consent Summary\n")
+    }
+    if("consent_metrics_consent_weeks_table" %in% params$to_be_printed){
+      cat("# Metrics Table\n")
+    }
+    if("consent_patient_characteristics_rtables" %in% params$to_be_printed){
+      cat("# Patient Characteristics RTables\n")
+    }
+
+    cat("## Applied filters:\n")
+
+    if(!grepl("NULL", params$filter$plotSpecificFilter, fixed=TRUE) & ("indications_sunburst" %in% params$to_be_printed | "consent_summary" %in% params$to_be_printed)){
+      unlistVector <- unlist(strsplit(params$filter$plotSpecificFilter,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+      
+      cat(paste("## Type:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterMinAge, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterMinAge,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+      
+      cat(paste("## Min Age:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterMaxAge, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterMaxAge,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Max Age:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterSex, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterSex,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Sex:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterRace, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterRace,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Race:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterSiteName, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterSiteName,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Tess site Name:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterPcp, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterPcp,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## PCP:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$plotSpecificFilterColumns, fixed=TRUE) & ("consent_patient_characteristics_rtables" %in% params$to_be_printed)){
+      unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterColumns,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Columns:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$plotSpecificFilterSingleColumn, fixed=TRUE) & 
+       (("consent_summary" %in% params$to_be_printed) | 
+        ("distribution_plot" %in% params$to_be_printed) |
+        ("distribution_count" %in% params$to_be_printed))){
+      
+      if(params$filter$plotSpecificFilterSingleColumn == "All" & "consent_summary" %in% params$to_be_printed){
+        unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterSingleColumn,","))
+        values <- unique(sub("^\\s+", "", unlistVector))
+  
+        cat(paste("## Column: sex, race, site_name, assigned_md", "\n"))
+        
+      } else {
+        unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterSingleColumn,","))
+        values <- unique(sub("^\\s+", "", unlistVector))
+  
+        cat(paste("## Column:", toString(values), "\n"))
+        
+      }
+    }
+    if(!grepl("NULL", params$filter$plotSpecificFilterRows, fixed=TRUE) 
+       & ("consent_summary" %in% params$to_be_printed | 
+          "consented_diagnosis_metastatic_distribution" %in% params$to_be_printed |
+          "consented_diagnosis_treatment_intent_status" %in% params$to_be_printed |
+          "consented_diagnosis_treatment_status" %in% params$to_be_printed
+          )){
+      unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterRows,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Field:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterIncludeExcludeNAIndications, fixed=TRUE)){
+      cat(paste("## Abstracted:", toString(params$filter$filterIncludeExcludeNAIndications), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterConsentStatus, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterConsentStatus,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Consent Status:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterAnatomic, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterAnatomic,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Anatomic Codes:", toString(values), "\n"))
+    }
+    if(!grepl("NULL", params$filter$filterMorphology, fixed=TRUE)){
+      unlistVector <- unlist(strsplit(params$filter$filterMorphology,","))
+      values <- unique(sub("^\\s+", "", unlistVector))
+
+      cat(paste("## Morphology:", toString(values), "\n"))
+    }
+```
+
+```{r fig.align = "center", out.width = '100%'}
+library(plotly)
+if("indications_sunburst" %in% params$to_be_printed){
+  tryCatch({
+    
+    plotData <- ICD03CodesForIndicationsSunburst(params$data)
+    if(params$filter$plotSpecificFilter == "icd03_codes"){
+      fig <- plotly::plot_ly(
+        ids = plotData$ids,
+        labels = plotData$labels,
+        parents = plotData$parents,
+        values = plotData$values,
+        type = 'sunburst',
+        branchvalues = 'total',
+        colors = c("#872b29", "#294787", "#877629", "#6c8729", "#87293a")
+      ) %>% plotly::layout(
+                font = list(family = "Assistant"),
+                title = list(text = data_last_sync_date, y = 0, x = 0.5, xanchor = "center", yanchor =  "bottom", font = list(size = 13))
+              )
+    } else if(params$filter$plotSpecificFilter == "human_readables"){
+        fig <- plotly::plot_ly(
+            ids = plotData$human_readable_ids,
+            labels = plotData$human_readable_labels,
+            parents = plotData$human_readable_parents,
+            values = plotData$values,
+            type = 'sunburst',
+            branchvalues = 'total',
+            colors = c("#872b29", "#294787", "#877629", "#6c8729", "#87293a")
+      ) %>% plotly::layout(
+                font = list(family = "Assistant"),
+                title = list(text = data_last_sync_date, y = 0, x = 0.5, xanchor = "center", yanchor =  "bottom", font = list(size = 13))
+              )
+    }
+    
+    file_name <- paste(params$img_save_path, "indications_sunburst_", params$count, ".png", sep = "")
+    plotly::plotly_IMAGE(fig, format = "png", out_file = file_name)
+    knitr::include_graphics(file_name)
+  }, error=function(e) {
+    return(e)
+  })
+}
+```
+
+```{r consent_sunburst, out.width = '100%'}
+library(plotly)
+if("consent_sunburst" %in% params$to_be_printed){
+  tryCatch({
+    
+    plotData <- ICD03CodesForIndicationsSunburst(params$data)
+    if(params$filter$plotSpecificFilter == "icd03_codes"){
+      fig <- plotly::plot_ly(
+        ids = plotData$ids,
+        labels = plotData$labels,
+        parents = plotData$parents,
+        values = plotData$values,
+        type = 'sunburst',
+        branchvalues = 'total',
+        colors = c("#872b29", "#294787", "#877629", "#6c8729", "#87293a")
+      ) %>% plotly::layout(
+                font = list(family = "Assistant"),
+                title = list(text = data_last_sync_date, y = 0, x = 0.5, xanchor = "center", yanchor =  "bottom", font = list(size = 13))
+              )
+    } else if(params$filter$plotSpecificFilter == "human_readables"){
+      fig <- plotly::plot_ly(
+        ids = plotData$human_readable_ids,
+        labels = plotData$human_readable_labels,
+        parents = plotData$human_readable_parents,
+        values = plotData$values,
+        type = 'sunburst',
+        branchvalues = 'total',
+        colors = c("#872b29", "#294787", "#877629", "#6c8729", "#87293a")
+      ) %>% plotly::layout(
+                font = list(family = "Assistant"),
+                title = list(text = data_last_sync_date, y = 0, x = 0.5, xanchor = "center", yanchor =  "bottom", font = list(size = 13))
+              )
+    }
+
+    file_name <- paste(params$img_save_path, "consent_sunburst_", params$count, ".png", sep = "")
+    plotly::plotly_IMAGE(fig, format = "png", out_file = file_name)
+    knitr::include_graphics(file_name)
+  }, error=function(e) {
+    return(e)
+  })
+}
+```
+
+```{r distribution_plot, out.width = '100%'}
+if("distribution_plot" %in% params$to_be_printed){
+  
+  tryCatch({
+    
+    result <- params$data[[params$filter$plotSpecificFilterSingleColumn]]
+    
+    result <- data.frame(result)
+    
+    ggplot2::ggplot(result, ggplot2::aes(x = as.factor(result), 
+                                         fill = as.factor(result))) + 
+      ggplot2::geom_bar() + 
+      ggplot2::scale_fill_hue(c = 40) +
+      ggplot2::theme(legend.position = "none",
+                     axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+      ggplot2::labs(title = "Distribution Plot",
+           x = data_last_sync_date, 
+           y = "Frequency")
+    
+  }, error=function(e) {
+    return(e)
+  })
+}
+```
+
+```{r distribution_count, out.width = '100%'}
+if("distribution_count" %in% params$to_be_printed){
+  library(knitr)
+  
+  result <- params$data[[params$filter$plotSpecificFilterSingleColumn]]
+  
+  knitr::kable(t(table(result)))
+}
+```
+
+```{r indications_diagnosis_most_recent_diagnosis, out.width = '100%'}
+if("indications_diagnosis_most_recent_diagnosis" %in% params$to_be_printed){
+  
+  tryCatch({
+    
+    result <- data.frame("anatomic_code_names" = params$data$anatomic_site)
+
+    ggplot2::ggplot(result, ggplot2::aes(x = as.factor(result$anatomic_code_names), 
+                                         fill = as.factor(result$anatomic_code_names) )) + 
+      ggplot2::geom_bar() + 
+      ggplot2::scale_fill_hue(c = 40) +
+      ggplot2::theme(legend.position = "none",
+                     axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+      ggplot2::labs(title = "",
+           x = paste("Anatomic Site", data_last_sync_date, sep = "\n"), 
+           y = "Frequency")
+    
+  }, error=function(e) {
+    return(e)
+  })
+}
+```
+
+```{r consented_diagnosis_primary_cancer_diagnosis, out.width = '100%'}
+if("consented_diagnosis_primary_cancer_diagnosis" %in% params$to_be_printed){
+  
+  result <- getConsentDiagnosisDfForChart(params$data)
+
+  ggplot2::ggplot(result, 
+                  ggplot2::aes(x = as.factor(result$anatomic_site), 
+                               fill = as.factor(result$anatomic_site) )) + 
+      ggplot2::geom_bar() + 
+      ggplot2::scale_fill_hue(c = 40) +
+      ggplot2::theme(legend.position = "none",
+                     axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+      ggplot2::labs(title = paste("RPAP", "CANCER DIAGNOSIS", sep = "\n"),
+           x = paste("CANCER DIAGNOSIS", data_last_sync_date, sep = "\n"), 
+           y = "Frequency")
+  
+}
+```
+
+```{r consented_diagnosis_metastatic_distribution, out.width = '100%'}
+if("consented_diagnosis_metastatic_distribution" %in% params$to_be_printed){
+  
+  primaryCancerDiagnosisData <- getConsentDiagnosisDfForChart(params$data)
+  
+  unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterRows,","))
+  rows <- sub("^\\s+", "", unlistVector)
+  rows <- unique(rows)
+      
+  result <- primaryCancerDiagnosisData[primaryCancerDiagnosisData$anatomic_site %in% 
+                                                c(rows),]
+  
+  ggplot2::ggplot(result, 
+                ggplot2::aes(x = as.factor(result$mstatus), 
+                             fill = as.factor(result$anatomic_site))) + 
+    ggplot2::geom_bar() + 
+    ggplot2::scale_fill_hue(c = 40) +
+    ggplot2::theme(legend.position = "bottom") +
+    ggplot2::scale_fill_discrete(name = "Anatomic Site") + 
+    ggplot2::labs(title = paste("RPAP", "Metastatic Distribution", sep = "\n"),
+         x = paste("Metastatic Distribution", data_last_sync_date, sep = "\n"), 
+         y = "Frequency")
+}
+```
+
+```{r consented_diagnosis_treatment_intent_status, out.width = '100%'}
+if("consented_diagnosis_treatment_intent_status" %in% params$to_be_printed){
+  
+  primaryCancerDiagnosisData <- getConsentDiagnosisDfForChart(params$data)
+  
+  unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterRows,","))
+  rows <- sub("^\\s+", "", unlistVector)
+  rows <- unique(rows)
+      
+  result <- primaryCancerDiagnosisData[primaryCancerDiagnosisData$anatomic_site %in% 
+                                                c(rows),]
+
+  ggplot2::ggplot(result, 
+                  ggplot2::aes(x = as.factor(result$SACT_treatment), 
+                               fill = as.factor(result$anatomic_site))) + 
+      ggplot2::geom_bar() + 
+      ggplot2::scale_fill_hue(c = 40) +
+      ggplot2::theme(legend.position="bottom",
+                     axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+    ggplot2::scale_fill_discrete(name = "Anatomic Site") + 
+      ggplot2::labs(title = paste("RPAP", "Treatment Status Intent", sep = "\n"),
+           x = paste("Treatment Status Intent", data_last_sync_date, sep ="\n"), 
+           y = "Frequency")
+}
+```
+
+```{r consented_diagnosis_treatment_status, out.width = '100%'}
+if("consented_diagnosis_treatment_status" %in% params$to_be_printed){
+  
+  primaryCancerDiagnosisData <- getConsentDiagnosisDfForChart(params$data)
+  
+  unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterRows,","))
+  rows <- sub("^\\s+", "", unlistVector)
+  rows <- unique(rows)
+      
+  result <- primaryCancerDiagnosisData[primaryCancerDiagnosisData$anatomic_site %in% 
+                                                c(rows),]
+  
+  ggplot2::ggplot(result, 
+                ggplot2::aes(x = as.factor(result$SACT_treatment), 
+                             fill = as.factor(result$anatomic_site))) + 
+    ggplot2::geom_bar() + 
+    ggplot2::scale_fill_hue(c = 40) +
+    ggplot2::theme(legend.position = "bottom",
+                   axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+    ggplot2::scale_fill_discrete(name = "Anatomic Site") + 
+    ggplot2::labs(title = paste("RPAP", "Treatment Status", sep = "\n"),
+         x = paste("Treatment Status", data_last_sync_date, sep ="\n"), 
+         y = "Frequency")
+}
+```
+
+```{r consent_summary, out.width = '100%'}
+if("consent_summary" %in% params$to_be_printed){
+  
+  tryCatch({
+    
+    unlistVector <- unlist(strsplit(params$filter$plotSpecificFilter,","))
+    values <- unique(sub("^\\s+", "", unlistVector))
+    
+    if(params$filter$plotSpecificFilterSingleColumn == "All"){
+      
+      defaultMetricsDfForChart <- getDefaultMetricsDfForChart(params$data)
+      
+      if(length(c(values)) == 2){
+        plot_data <- defaultMetricsDfForChart[
+                  defaultMetricsDfForChart$Start >= params$filter$filterDateFrom &
+                    defaultMetricsDfForChart$Start <= params$filter$filterDateTo,]
+                
+        plot_data$type <- paste("Weekly", sep = "")
+            
+        cumsum_data <- data.frame("Year-Week" = plot_data$`Year-Week`,
+                                      "Start" = plot_data$Start,
+                                      "End" = plot_data$End,
+                                      "Consent" = plot_data$Consent,
+                                      "type" = paste("Cumsum", sep = ""))
+        
+        cumsum_data$Consent <- cumsum(plot_data$Consent)
+        
+        names(cumsum_data) <- c("Year-Week", "Start", "End", "Consent", "type")
+        
+        plotData <- rbind(plot_data, cumsum_data)
+        x_data <- plotData$Start
+        y_data <- plotData$Consent
+      }
+      else if(c(values) %in% "Weekly" & length(c(values)) == 1){
+        
+        plotData <- defaultMetricsDfForChart[
+          defaultMetricsDfForChart$Start >= params$filter$filterDateFrom &
+            defaultMetricsDfForChart$Start <= params$filter$filterDateTo,]
+        
+        plotData$type <- "Weekly"
+        x_data <- plotData$Start
+        y_data <- plotData$Consent
+      } 
+      else if(c(values) %in% "Cumulative" & length(c(values)) == 1){
+        
+        plotData <- defaultMetricsDfForChart[
+          defaultMetricsDfForChart$Start >= params$filter$filterDateFrom &
+            defaultMetricsDfForChart$Start <= params$filter$filterDateTo,]
+        
+        plotData$type <- "Cumulative"
+        x_data <- plotData$Start
+        y_data <- cumsum(plotData$Consent)
+      } 
+      
+    } else {
+      
+      unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterRows,","))
+      rows <- sub("^\\s+", "", unlistVector)
+      rows <- unique(rows)
+    
+      metricsDataForChart <- getMetricsDfForCharts(params$data, params$filter$plotSpecificFilterSingleColumn, 
+                                  c(rows))
+      
+      if(length(c(values)) == 2){
+        plot_data <- metricsDataForChart[
+          metricsDataForChart$Start >= params$filter$filterDateFrom &
+            metricsDataForChart$Start <= params$filter$filterDateTo,]
+        
+        temp_type <- plot_data$type
+        
+        plot_data$type <- paste("Weekly-", plot_data$type, sep = "")
+        
+        cumsum_data <- data.frame("Year-Week" = plot_data$`Year-Week`,
+                                  "Start" = plot_data$Start,
+                                  "End" = plot_data$End,
+                                  "Consent" = plot_data$Consent,
+                                  "type" = paste("Cumsum-", temp_type, sep = ""))
+        
+        cumsum_data$Consent <- cumsum(plot_data$Consent)
+        
+        names(cumsum_data) <- c("Year-Week", "Start", "End", "Consent", "type")
+        
+        plotData <- rbind(plot_data, cumsum_data)
+        x_data <- plotData$Start
+        y_data <- plotData$Consent
+      }
+      else if(c(values) %in% "Weekly" & length(c(values)) == 1){
+        
+        plotData <- metricsDataForChart[
+          metricsDataForChart$Start >= params$filter$filterDateFrom &
+            metricsDataForChart$Start <= params$filter$filterDateTo,]  
+        
+        plotData$type <- "Weekly"
+        x_data <- plotData$Start
+        y_data <- plotData$Consent
+      } 
+      else if(c(values) %in% "Cumulative" & length(c(values)) == 1){
+        
+        plotData <- metricsDataForChart[
+          metricsDataForChart$Start >= params$filter$filterDateFrom &
+            metricsDataForChart$Start <= params$filter$filterDateTo,]
+        
+        plotData$type <- "Cumulative"
+        x_data <- plotData$Start
+        y_data <- plotData$cumsum
+      } 
+    }
+    plotData$x_data <- x_data
+    plotData$y_data <- y_data
+    
+    plotData <- plotData[!is.na(plotData$y_data), ]
+    
+    ggplot2::ggplot(plotData, 
+                ggplot2::aes(x = as.factor(x_data), y = as.factor(y_data), col = as.factor(type), group = as.factor(type))) +
+      ggplot2::geom_text(ggplot2::aes(label = y_data), 
+                         vjust=-.5,
+                         nudge_x = 0.25,
+                         nudge_y = 0.25,
+                         check_overlap = TRUE,
+                         size = 2) + 
+      ggplot2::geom_line(ggplot2::aes(color = plotData$type)) +
+      ggplot2::geom_point(ggplot2::aes(color = plotData$type), size = 1) +
+      ggplot2::theme_classic() +
+      ggplot2::scale_fill_hue(c = 40) +
+      ggplot2::theme(legend.position="bottom", legend.direction="vertical",
+                     axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+      ggplot2::scale_fill_discrete(name = "Type") + 
+      ggplot2::labs(title = "",
+                    x = paste("Time Weeks", data_last_sync_date, sep ="\n"), 
+                    y = "Frequency")
+    
+  }, error=function(e) {
+    return(e)
+  })
+}
+```
+
+```{r consent_metrics_consent_weeks_table, out.width = '100%'}
+if("consent_metrics_consent_weeks_table" %in% params$to_be_printed){
+  library(knitr)
+  
+  tryCatch({
+    metricsDataForChart <- getDefaultMetricsDfForChart(params$data)
+    knitr::kable(metricsDataForChart)
+  }, error=function(e) {
+    return(e)
+  })
+}
+```
+
+```{r consent_patient_characteristics_rtables, out.width = '100%'}
+library(rtables)
+library(tern)
+
+if("consent_patient_characteristics_rtables" %in% params$to_be_printed){
+  
+  tryCatch({
+    consentedRtableData <- consentedRtable(params$data)
+  
+    unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterRows,","))
+    rows <- sub("^\\s+", "", unlistVector)
+    rows <- unique(rows)
+    
+    unlistVector <- unlist(strsplit(params$filter$plotSpecificFilterColumns,","))
+    columns <- sub("^\\s+", "", unlistVector)
+    columns <- unique(columns)
+    
+    lyt <- rtables::basic_table(show_colcounts = TRUE) |>
+      rtables::split_cols_by(var = c(columns)) |>
+      tern::summarize_vars(c(rows), var_labels = c(rows))
+  
+    rtables::build_table(lyt, consentedRtableData)
+    
+  }, error=function(e) {
+    return(NULL)
+  })
+}
+```

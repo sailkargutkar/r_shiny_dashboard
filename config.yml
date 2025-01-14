@@ -1,0 +1,10 @@
+default:
+  rhino_log_level: !expr Sys.getenv("RHINO_LOG_LEVEL", "INFO")
+  rhino_log_file: !expr Sys.getenv("RHINO_LOG_FILE", NA)
+  environment: "development"
+  read_external_datafile: TRUE
+  show_error: TRUE
+  update_rds: FALSE
+  generate_report_rmd_file: "generate_report.rmd"
+  plotly_username: "sailk"
+  plotly_api_key: "0RLTL5STuAo8EtMWRJAF"
